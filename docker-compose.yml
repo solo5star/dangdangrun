@@ -1,0 +1,20 @@
+version: "3"
+services:
+  server:
+    image: solo5star/dangdangrun
+    restart: unless-stopped
+    ports:
+      - 80:3355
+    environment:
+      - TZ=Asia/Seoul
+      - REGIONS=${REGIONS}
+    command: server
+
+  bot:
+    image: solo5star/dangdangrun
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Seoul
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - SERVER_HOST=ws://server:3355
+    command: bot

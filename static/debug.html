@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dangdangrun 테스트 페이지</title>
+
+    <style>
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: center;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>dangdangrun 테스트 페이지</h1>
+    <h2>
+        Websocket Connection Status:
+        <span id="connection-status">UNINITIALIZED</span>
+    </h2>
+
+    <table id="legend">
+        <tbody>
+        </tbody>
+    </table>
+
+    <p></p>
+
+    <table id="result">
+        <thead>
+            <tr>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        function connect() {
+            const ws = new WebSocket('ws://localhost:3355');
+
+            ws.onopen = function () {
+                document.querySelector("#connection-status").innerHTML = 'OPEN';
+            }
+
+            ws.onerror = function () {
+                document.querySelector("#connection-status").innerHTML = 'ERROR';
+                ws.close();
+            }
+
+            ws.onclose = function () {
+                document.querySelector("#connection-status").innerHTML = 'CLOSE';
+                setTimeout(() => {
+                    connect();
+                }, 1000);
+            }
+
+            ws.onmessage = function (event) {
+                const response = JSON.parse(event.data);
+                if (response.type === 'stores') {
+                    document.querySelector('#result > thead > tr').innerHTML = `
+                        <th>시간</th>
+                        ${response.data.stores.map(store => `
+                            <th>${store.name}</th>
+                        `).join('')}
+                    `;
+                }
+                else if (response.type === 'items') {
+                    [...document.querySelectorAll('#result > thead > tr > th:not(:first-child)')].forEach(th => {
+                        th.setAttribute('colspan', response.data.items.length);
+                    });
+
+                    document.querySelector('#legend').innerHTML = `
+                        <tr>
+                            ${response.data.items.map(item => `
+                                <td>${item.no}</td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            ${response.data.items.map(item => `
+                                <td>${item.name}</td>
+                            `).join('')}
+                        </tr>
+                    `;
+
+                    document.querySelector('#result > tbody').innerHTML += `
+                        <tr>
+                            <td>${new Date(response.data.time).toLocaleString()}</td>
+                            ${response.data.stock_quantities.map(stocks_per_store => `
+                                ${stocks_per_store.map(stock => `
+                                    <td>${stock}</td>
+                                `).join('')}
+                            `).join('')}
+                        </tr>
+                    `;
+                }
+            }
+        }
+
+        connect();
+    </script>
+</body>
+
+</html>
